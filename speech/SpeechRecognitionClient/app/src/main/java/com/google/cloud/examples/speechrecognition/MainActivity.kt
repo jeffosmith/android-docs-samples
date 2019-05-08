@@ -27,12 +27,7 @@ import android.widget.TextSwitcher
 import android.widget.TextView
 import com.google.api.gax.rpc.ApiStreamObserver
 import com.google.auth.oauth2.GoogleCredentials
-import com.google.cloud.speech.v1.RecognitionConfig
-import com.google.cloud.speech.v1.SpeechClient
-import com.google.cloud.speech.v1.SpeechSettings
-import com.google.cloud.speech.v1.StreamingRecognitionConfig
-import com.google.cloud.speech.v1.StreamingRecognizeRequest
-import com.google.cloud.speech.v1.StreamingRecognizeResponse
+import com.google.cloud.speech.v1.*
 import java.util.concurrent.atomic.AtomicBoolean
 
 private const val TAG = "Speech"
@@ -98,7 +93,9 @@ class MainActivity : AppCompatActivity() {
                         override fun onNext(value: StreamingRecognizeResponse) {
                             runOnUiThread {
                                 when {
-                                    value.resultsCount > 0 -> mTextView.setText(value.getResults(0).getAlternatives(0).transcript)
+                                    value.resultsCount > 0 -> {
+                                        mTextView.setText(value.getResults(0).getAlternatives(0).transcript)
+                                    }
                                     else -> mTextView.setText(getString(R.string.api_error))
                                 }
                             }
@@ -118,6 +115,10 @@ class MainActivity : AppCompatActivity() {
                 val builder = StreamingRecognizeRequest.newBuilder()
                         .setAudioContent(bytes)
 
+                val speechContext: SpeechContext.Builder = SpeechContext
+                        .newBuilder()
+                        .addPhrases("handball")
+
                 // if first time, include the config
                 if (isFirstRequest.getAndSet(false)) {
                     builder.streamingConfig = StreamingRecognitionConfig.newBuilder()
@@ -125,6 +126,8 @@ class MainActivity : AppCompatActivity() {
                                     .setLanguageCode("en-US")
                                     .setEncoding(RecognitionConfig.AudioEncoding.LINEAR16)
                                     .setSampleRateHertz(16000)
+                                    .setModel("")
+                                    .addSpeechContexts(speechContext)
                                     .build())
                             .setInterimResults(false)
                             .setSingleUtterance(false)
