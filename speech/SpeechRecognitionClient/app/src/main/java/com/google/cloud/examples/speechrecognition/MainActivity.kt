@@ -43,9 +43,18 @@ class MainActivity : AppCompatActivity() {
         private const val REQUEST_RECORD_AUDIO_PERMISSION = 200
     }
 
-    private var mPermissionToRecord = false
+    private var mPermissionToRecord = true
     private var mAudioEmitter: AudioEmitter? = null
     private lateinit var mTextView: TextSwitcher
+    private lateinit var mKickTextView: TextView
+    private lateinit var mHandTextView: TextView
+    private lateinit var mMarkTextView: TextView
+    private lateinit var mTackleTextView: TextView
+
+    private var kicks = 0
+    private var tackles = 0
+    private var marks = 0
+    private var handballs = 0
 
     private val mSpeechClient by lazy {
         // NOTE: The line below uses an embedded credential (res/raw/sa.json).
@@ -68,6 +77,11 @@ class MainActivity : AppCompatActivity() {
 
         // get UI element
         mTextView = findViewById(R.id.last_recognize_result)
+        mKickTextView = findViewById(R.id.last_kick_result)
+        mTackleTextView = findViewById(R.id.last_tackle_result)
+        mMarkTextView = findViewById(R.id.last_mark_result)
+        mHandTextView = findViewById(R.id.last_hand_result)
+
         mTextView.setFactory {
             val t = TextView(this)
             t.setText(R.string.start_talking)
@@ -77,6 +91,11 @@ class MainActivity : AppCompatActivity() {
         }
         mTextView.setInAnimation(applicationContext, android.R.anim.fade_in)
         mTextView.setOutAnimation(applicationContext, android.R.anim.fade_out)
+
+        mKickTextView.text = "Kicks: 0"
+        mTackleTextView.text = "Tackles: 0"
+        mMarkTextView.text = "Marks: 0"
+        mHandTextView.text = "Handballs: 0"
     }
 
     override fun onResume() {
@@ -94,7 +113,23 @@ class MainActivity : AppCompatActivity() {
                             runOnUiThread {
                                 when {
                                     value.resultsCount > 0 -> {
-                                        mTextView.setText(value.getResults(0).getAlternatives(0).transcript)
+                                        val transcript = value.getResults(0).getAlternatives(0).transcript
+
+                                        Log.d(TAG, "Transcript: $transcript")
+
+                                        mTextView.setText(transcript)
+
+                                        val words = transcript.split(" ")
+                                        kicks += words.filter { it.toLowerCase() == "kick" }.count()
+                                        tackles += words.filter { it.toLowerCase() == "tackle" }.count()
+                                        marks += words.filter { it.toLowerCase() == "mark" }.count()
+                                        handballs += words.filter { it.toLowerCase() == "hand" }.count()
+
+                                        mKickTextView.text = "Kicks: $kicks"
+                                        mTackleTextView.text = "Tackles: $tackles"
+                                        mMarkTextView.text = "Marks: $marks"
+                                        mHandTextView.text = "Handballs: $handballs"
+
                                     }
                                     else -> mTextView.setText(getString(R.string.api_error))
                                 }
@@ -110,23 +145,26 @@ class MainActivity : AppCompatActivity() {
                         }
                     })
 
+            val speechContext: SpeechContext.Builder = SpeechContext
+                    .newBuilder()
+                    .addPhrases("kick")
+                    .addPhrases("tackle")
+                    .addPhrases("hand")
+                    .addPhrases("mark")
+
             // monitor the input stream and send requests as audio data becomes available
             mAudioEmitter!!.start { bytes ->
                 val builder = StreamingRecognizeRequest.newBuilder()
                         .setAudioContent(bytes)
 
-                val speechContext: SpeechContext.Builder = SpeechContext
-                        .newBuilder()
-                        .addPhrases("handball")
-
                 // if first time, include the config
                 if (isFirstRequest.getAndSet(false)) {
                     builder.streamingConfig = StreamingRecognitionConfig.newBuilder()
                             .setConfig(RecognitionConfig.newBuilder()
-                                    .setLanguageCode("en-US")
+                                    .setLanguageCode("en-AU")
                                     .setEncoding(RecognitionConfig.AudioEncoding.LINEAR16)
                                     .setSampleRateHertz(16000)
-                                    .setModel("")
+//                                    .setModel("")
                                     .addSpeechContexts(speechContext)
                                     .build())
                             .setInterimResults(false)

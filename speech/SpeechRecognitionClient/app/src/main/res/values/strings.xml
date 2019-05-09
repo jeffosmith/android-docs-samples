@@ -15,7 +15,7 @@
   -->
 
 <resources>
-    <string name="app_name">Cloud Speech Example</string>
-    <string name="start_talking">Please say something!</string>
+    <string name="app_name">Live Stats Demo</string>
+    <string name="start_talking">Start Calling the stats</string>
     <string name="api_error">Sorry, there was a problem!</string>
 </resources>
